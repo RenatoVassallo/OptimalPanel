@@ -1,9 +1,14 @@
 [project]
 name = "OptimalPanel"
 version = "0.1.0"
-description = "RL methods for optimal panel data"
+description = "RL-based tool for optimal panel data forecasting"
+authors = [
+  { name = "Renato Vassallo", email = "renato.vassallo@bse.eu" }
+]
 readme = "README.md"
+
 requires-python = ">=3.11"
+
 dependencies = [
     "joblib>=1.5.0",
     "numpy>=2.2.6",
