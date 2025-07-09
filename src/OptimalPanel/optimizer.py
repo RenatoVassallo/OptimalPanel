@@ -83,7 +83,14 @@ class OptimalBundleRL:
     
     def compute_similarities(self, test_start, test_end, rf_params=None):
         """
-        Compute donor similarities based on out-of-sample RMSE.
+        Compute donor similarities for a forecasting task using out-of-sample RMSE.
+
+        This method fits a RandomForest model on each potential donor unit's 
+        data prior to `test_start` and evaluates its predictive accuracy 
+        on the target unit over the specified test window.
+
+        Donors must have at least 5 training observations before `test_start` 
+        to be considered valid.
         
         Args:
             test_start: pd.Timestamp for testing start (e.g., pd.to_datetime("2001-01-01")).
@@ -119,7 +126,11 @@ class OptimalBundleRL:
                 continue
 
             train_df = df[(df[unit_col] == iso) & (df[time_col] < test_start)]
-            if len(train_df) < 5 or len(X_target_test) == 0:
+            if len(train_df) < 5:
+                print(f"  ⛔ Skipping donor {iso}: too little training data.")
+                continue
+            if len(X_target_test) == 0:
+                print(f"  ⛔ Target test set is empty. Check feature columns or filtering.")
                 continue
 
             X_train = train_df[feature_cols]
@@ -146,7 +157,7 @@ class OptimalBundleRL:
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=self.lr)
         self.inclusion_probs_by_donor = {iso: [] for iso in self.donor_units}
 
-        print(f"\n🔍 Target: {target_unit} — Top donor scores:")
+        print(f"\n🔍 Target: {target_unit} — Initial Similarity Vector:")
         for iso, score in zip(donor_isos[:10], similarity_scores[:10]):
             print(f"  {iso}: {score:.4f}")
 
@@ -226,9 +237,9 @@ class OptimalBundleRL:
         for rank, (mse, bundle, epoch) in enumerate(self.top_bundles[:top_k], 1):
             print(f"{rank}. Epoch {epoch:3d} — MSE: {mse:.4f}, Bundle: {bundle}")
             
-    def _compute_benchmarks(self):
+    def _compute_benchmarks(self, ar_exo='c'):
         """
-        Compute MSE for: AR(1), Solo RF, Full Panel RF, Best Bundle RF
+        Compute MSE for: AR(1), Solo RF, Full Panel RF, Best Bundle RF.
         """
         solo_errors, full_errors, bundle_errors, ar1_errors = [], [], [], []
 
@@ -249,7 +260,7 @@ class OptimalBundleRL:
             df_train = self.df[(self.df[self.unit_col] == self.target_unit) & (self.df[self.time_col] < t)]
             y_ar = df_train[self.target_col].values
             if len(y_ar) >= 3:
-                ar_model = AutoReg(y_ar, lags=1, old_names=False).fit()
+                ar_model = AutoReg(y_ar, lags=1, trend=ar_exo, old_names=False).fit()
                 y_pred = ar_model.predict(start=len(y_ar), end=len(y_ar))[0]
                 y_true = self.df[
                     (self.df[self.unit_col] == self.target_unit) & (self.df[self.time_col] == t)
@@ -268,13 +279,14 @@ class OptimalBundleRL:
             "best_bundle_rf_mse": np.mean(bundle_errors)
         }
             
-    def train(self, n_epochs: int = 300, rf_params=None, save: bool = True, save_path: str = None):
+    def train(self, n_epochs: int = 300, rf_params=None, ar_exo='c', save: bool = True, save_path: str = None):
         """
         Run RL training to identify optimal donor bundles over epochs.
         
         Args:
             n_epochs (int): Number of training epochs.
             rf_params (dict, optional): Parameters for RandomForestRegressor.
+            ar_exo (str): Exogenous variable for AR(1) model, default is 'c' (constant).
             save (bool): Whether to save training results.
             save_path (str, optional): Path to save results. Defaults to 'results_{target_unit}.pkl'.
         """
@@ -306,7 +318,7 @@ class OptimalBundleRL:
             if epoch % 10 == 0:
                 print(f"Epoch {epoch} — Avg MSE: {mse:.4f}, Bundle Size: {int(inclusion_tensor.sum().item())}")
 
-        self.benchmarks = self._compute_benchmarks()
+        self.benchmarks = self._compute_benchmarks(ar_exo=ar_exo)
 
         # Save results
         if save:
