@@ -5,6 +5,9 @@ build/
 dist/
 wheels/
 *.egg-info
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+.DS_Store # macOS system files
 
 # Virtual environments
 .venv
