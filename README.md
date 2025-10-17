@@ -7,12 +7,12 @@ It learns, through a policy network and reward-driven optimization, to dynamical
 ## ⚙️ Installation
 
 ### 🧩 Requirements
-	•	Python 3.11
-	•	Recommended: create a dedicated virtual environment
+
+**Python 3.11** is required. It’s strongly recommended to work within a dedicated **virtual environment**.
 
 ```bash
 # Create and activate a virtual environment
-python3.11 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate   # On macOS/Linux
 # .venv\Scripts\activate    # On Windows
 ```
