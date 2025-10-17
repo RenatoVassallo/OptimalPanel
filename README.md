@@ -1,6 +1,7 @@
 # OptimalPanel
 
-**OptimalPanel** is a reinforcement learning-based tool for selecting optimal donor units (bundles) to improve panel forecasting accuracy. It leverages a policy network and reward-driven learning to dynamically identify informative subsets of units, providing a data-driven alternative to manual donor selection in synthetic control and related models.
+**OptimalPanel** is a reinforcement learning-based framework for selecting optimal donor units (bundles) to enhance panel forecasting accuracy.
+It learns, through a policy network and reward-driven optimization, to dynamically identify the most informative subset of donors for a given target unit, offering a flexible, data-driven alternative to static pooling or manual donor selection approaches used in synthetic control and related econometric methods.
 
 ---
 
@@ -8,106 +9,105 @@
 
 For a detailed tutorial, refer to the following notebook:
 
-* [Simulation Tutorial](./notebooks/Tutorial_Simulation.ipynb): demonstrates how to simulate synthetic panel data with known structural patterns and shocks, and then apply `OptimalPanel` to forecast outcomes for a target unit.
+* [Simulation Tutorial](./notebooks/Tutorial_Simulation.ipynb): Demonstrates how to simulate panel data with known structural patterns and shocks, and how to apply `OptimalPanel` to forecast outcomes for a target unit using **reinforcement learning**.
 
 ---
 
 ## 🚀 Quick Start
 
 ```python
-from OptimalPanel.optimizer import OptimalBundleRL
+from OptimalPanel import OptimalBundleRL
 import pandas as pd
 
-# Define forecasting steps (e.g. yearly from 2005 to 2014)
-forecast_times = list(pd.date_range(start="2005-01-01", end="2014-01-01", freq="YS"))
-total_epochs = 2000
+# Define calibration (training) and testing periods
+calibration_periods = pd.date_range(start="2000-01-01", end="2020-01-01", freq="YS")
+testing_periods     = pd.date_range(start="2021-01-01", end="2035-01-01", freq="YS")
 
-# Initialize optimizer
+# Initialize RL optimizer
 rl = OptimalBundleRL(
-    df=df_sim,
+    df=df_sim[['unit', 'year', 'y', 'y_lag', 'x_lag']],
     unit_col='unit',
     time_col='year',
     target_col='y',
-    feature_cols=['y_lag', 'x1', 'x2', 'x3'],
+    feature_cols=['y_lag', 'x_lag'],
     target_unit='A',
-    forecast_times=forecast_times
+    calibration_periods=calibration_periods,
+    testing_periods=testing_periods,
 )
 
-# Compute donor similarities based on out-of-sample RMSE
-rl.compute_similarities(
-    test_start=pd.to_datetime("1998-01-01"),
-    test_end=pd.to_datetime("2004-01-01")
-)
+# Compute initial donor similarities
+initial_similarities = rl.compute_similarities()
 
 # Train the reinforcement learning policy
-rl.train(
-    n_epochs=total_epochs,
-    save=False,
-    save_path="results/annual/results_A.pkl"
-)
+rl.train(n_epochs=1000, save=False)
 
-# View top bundles and learning dynamics
-rl.print_top_bundles(top_k=2)
-rl.plot_learning_curve()
+# Inspect results
+rl.print_top_bundles(top_k=1)
 rl.plot_donor_probs(top_n=2)
+rl.plot_learning_curve()
 ```
 
 ---
 
 ## 🔑 Key Methods
 
-### `compute_similarities(test_start, test_end)`
-> Computes donor similarities using out-of-sample RMSE from a Random Forest.
+### `compute_similarities(similarity_periods, split_frac=0.6)`
+> Computes pairwise similarities between the target unit and potential donors, typically based on out-of-sample RMSE from a Random Forest.
 
-- Filters potential donor units
-- Initializes policy network based on similarity weights
+- Filters available donor units
+- Initializes the policy network using similarity weights
+- Returns a normalized similarity tensor for RL initialization
 
 ---
 
-### `train(n_epochs=300, rf_params=None, save=True, save_path=None)`
+### `train(n_epochs=300, rf_params=None, ar_exo='c', save=True, save_path=None)`
 > Trains a reinforcement learning policy to select optimal donor bundles.
 
+- Updates policy network after each rolling forecast
 - Uses REINFORCE with entropy regularization
-- Tracks top-performing bundles
-- Computes benchmarks for comparison
+- Tracks MSE by epoch and updates inclusion probabilities
+- Evaluates performance on the testing horizon after training
 
 ---
 
 ### `print_top_bundles(top_k=5)`
-> Display the top-k lowest-MSE bundles across training.
+> Displays the top-k donor bundles with the lowest mean squared error (MSE).
 
 ---
 
 ### `plot_learning_curve()`
-> (Add-on: plot average MSE over training epochs.)
+> Plots the evolution of average MSE over training epochs.
 
 ---
 
 ### `plot_donor_probs(top_n=5)`
-> (Add-on: plot donor unit inclusion probabilities over time.)
+> Visualizes the evolution of inclusion probabilities for the top-N donor units.
 
 ---
 
 ## 📊 Benchmarks Included
 
-After training, the following models are compared:
+After training, the model evaluates the following benchmarks for comparison:
 
 - **AR(1)** model  
 - **Target-only Random Forest**  
 - **Full-panel Random Forest**  
-- **Best bundle Random Forest (RL-selected)**  
+- **RL-selected donor bundle Random Forest**  
 
 ---
 
 ## 📁 Outputs (when `save=True`)
 A `.pkl` file with:
 
-- MSEs, top bundles, donor inclusion probabilities  
-- Trained policy network and optimizer state  
-- Benchmark performance  
+- Average MSEs per epoch
+- Top-performing donor bundles
+- Inclusion probabilities for all donors
+- Trained policy network and optimizer state
+- Benchmark results across models
 
 ---
 
 ## 🧠 Motivation
 
-Forecasting panel data often requires selecting informative donor units. Rather than relying on static heuristics or arbitrary similarity metrics, `OptimalPanel` learns an inclusion policy that adapts over time and is tuned for predictive accuracy.
+Selecting informative donors is central to panel forecasting.
+Instead of relying on fixed heuristics or static pooling, `OptimalPanel` learns a policy that adaptively **adjusts donor weights over time**, exploiting temporal dependencies, cross-unit relationships, and data-driven reward feedback to improve predictive accuracy in dynamic, heterogeneous environments.
