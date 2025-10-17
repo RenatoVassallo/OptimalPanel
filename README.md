@@ -26,15 +26,21 @@ pip install https://github.com/RenatoVassallo/OptimalPanel/releases/download/v0.
 
 ### 🧑‍💻 Developer tools (recommended for notebooks & visualization)
 
-To enable examples, plotting, and interactive tutorials:
+To enable examples, plotting, and interactive tutorials, create a `requirements.txt` file with the following contents:
+
+```text
+pyarrow>=20.0.0
+ipykernel>=6.29.5
+ipywidgets>=8.1.6
+matplotlib>=3.10.1
+seaborn>=0.13.2
+tqdm
+```
+
+Then install the developer dependencies with:
+
 ```bash
-pip install \
-  pyarrow>=20.0.0 \
-  ipykernel>=6.29.5 \
-  ipywidgets>=8.1.6 \
-  matplotlib>=3.10.1 \
-  seaborn>=0.13.2 \
-  tqdm
+pip install -r requirements.txt
 ```
 
 ---
