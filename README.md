@@ -4,6 +4,40 @@
 It learns, through a policy network and reward-driven optimization, to dynamically identify the most informative subset of donors for a given target unit, offering a flexible, data-driven alternative to static pooling or manual donor selection approaches used in synthetic control and related econometric methods.
 
 ---
+## ⚙️ Installation
+
+### 🧩 Requirements
+	•	Python 3.11
+	•	Recommended: create a dedicated virtual environment
+
+```bash
+# Create and activate a virtual environment
+python3.11 -m venv .venv
+source .venv/bin/activate   # On macOS/Linux
+# .venv\Scripts\activate    # On Windows
+```
+
+### 📦 Install the package
+
+Download and install the latest release wheel from GitHub:
+```bash
+pip install https://github.com/RenatoVassallo/OptimalPanel/releases/download/v0.1.0/OptimalPanel-0.1.0-py3-none-any.whl
+```
+
+### 🧑‍💻 Developer tools (recommended for notebooks & visualization)
+
+To enable examples, plotting, and interactive tutorials:
+```bash
+pip install \
+  pyarrow>=20.0.0 \
+  ipykernel>=6.29.5 \
+  ipywidgets>=8.1.6 \
+  matplotlib>=3.10.1 \
+  seaborn>=0.13.2 \
+  tqdm
+```
+
+---
 
 ## 📚 Tutorials and Examples
 
